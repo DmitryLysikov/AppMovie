@@ -6,18 +6,16 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import ru.dima.moviesapp.ui.screens.details.MovieDetailsScreen
-import ru.dima.moviesapp.ui.screens.details.MovieDetailsScreen
 import ru.dima.moviesapp.ui.screens.favorites.FavoritesScreen
 import ru.dima.moviesapp.ui.screens.movies.MoviesScreen
 import ru.dima.moviesapp.ui.screens.movies.MoviesViewModel
 
-sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
+sealed class Screen(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Movies : Screen("movies", "Фильмы", Icons.Default.Check)
     object Favorites : Screen("favorites", "Избранное", Icons.Default.Favorite)
     object Details : Screen("details/{movieId}", "Детали", Icons.Default.Info)
@@ -35,12 +33,12 @@ fun NavGraph() {
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
-                    val currentDestination = navController.currentBackStackEntryAsState().value?.destination
+                    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
                     items.forEach { screen ->
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = screen.label) },
                             label = { Text(screen.label) },
-                            selected = currentDestination?.route == screen.route,
+                            selected = currentRoute == screen.route,
                             onClick = {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.startDestinationId)
@@ -60,9 +58,9 @@ fun NavGraph() {
         ) {
             composable(Screen.Movies.route) {
                 showBottomBar = true
-                MoviesScreen(viewModel) { movieId ->
+                MoviesScreen(viewModel) { id ->
                     showBottomBar = false
-                    navController.navigate("details/$movieId")
+                    navController.navigate("details/$id")
                 }
             }
             composable(Screen.Favorites.route) {
@@ -70,13 +68,14 @@ fun NavGraph() {
                 FavoritesScreen()
             }
             composable(
-                "details/{movieId}",
+                route = Screen.Details.route,
                 arguments = listOf(navArgument("movieId") { type = NavType.IntType })
             ) { backStackEntry ->
                 showBottomBar = false
-                val id = backStackEntry.arguments?.getInt("movieId")
-                val movie = viewModel.getMovieById(id ?: -1)
-                if (movie != null) MovieDetailsScreen(movie)
+                val movieId = backStackEntry.arguments?.getInt("movieId") ?: -1
+                viewModel.getMovieById(movieId)?.let {
+                    MovieDetailsScreen(it)
+                }
             }
         }
     }

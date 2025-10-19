@@ -9,5 +9,12 @@ data class Movie(
     val year: String,
     val genre: String,
     val posterUrl: String,
-    val description: String
+    val description: String,
+    val actors: List<Actor> = emptyList()
+)
+
+@Serializable
+data class Actor(
+    val name: String,
+    val photoUrl: String
 )
