@@ -4,41 +4,30 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import ru.dima.moviesapp.data.model.Movie
-import ru.dima.moviesapp.data.model.AppPadding
+import ru.dima.moviesapp.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MoviesScreen(
-    viewModel: MoviesViewModel,
-    onMovieClick: (Int) -> Unit
-) {
-    val movies by viewModel.movies.collectAsState()
-    val navigateToDetails by viewModel.navigateToDetails.collectAsState()
+fun MoviesScreen(viewModel: MoviesViewModel, onMovieClick: (Int) -> Unit) {
+    val state by viewModel.moviesState.collectAsState()
 
-    LaunchedEffect(navigateToDetails) {
-        navigateToDetails?.let { id ->
-            onMovieClick(id)
-            viewModel.onNavigated()
-        }
-    }
-
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Фильмы") }) }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .padding(AppPadding.medium)
-        ) {
-            items(movies) { movie ->
-                MovieItem(movie = movie) {
-                    viewModel.onMovieClicked(movie.id)
+    when (state) {
+        is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+        is UiState.Error -> Text("Ошибка: ${(state as UiState.Error).message}")
+        is UiState.Success -> {
+            val movies = (state as UiState.Success<List<Movie>>).data
+            LazyColumn {
+                items(movies) { movie ->
+                    MovieItem(movie, onClick = { onMovieClick(movie.id) })
                 }
             }
         }
@@ -47,23 +36,33 @@ fun MoviesScreen(
 
 @Composable
 fun MovieItem(movie: Movie, onClick: () -> Unit) {
+    val title = movie.name ?: movie.alternativeName ?: movie.enName ?: "Без названия"
+    val year = movie.year?.toString() ?: "—"
+    val imageUrl = movie.poster?.previewUrl?.replace("http://", "https://")
+        ?: movie.poster?.url?.replace("http://", "https://")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(AppPadding.small)
+            .padding(8.dp)
             .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Row(modifier = Modifier.padding(AppPadding.small)) {
+        Row(modifier = Modifier.padding(8.dp)) {
             AsyncImage(
-                model = movie.posterUrl,
-                contentDescription = movie.title,
-                modifier = Modifier.size(100.dp)
+                model = imageUrl,
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                placeholder = null,
+                error = null,
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(8.dp))
             )
-            Spacer(Modifier.width(AppPadding.medium))
+            Spacer(Modifier.width(16.dp))
             Column {
-                Text(movie.title, style = MaterialTheme.typography.titleLarge)
-                Text("${movie.year} • ${movie.genre}", style = MaterialTheme.typography.bodyMedium)
+                Text(title, style = MaterialTheme.typography.titleLarge)
+                Text(year, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

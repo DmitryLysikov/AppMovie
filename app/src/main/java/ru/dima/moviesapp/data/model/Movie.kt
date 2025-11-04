@@ -5,16 +5,19 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Movie(
     val id: Int,
-    val title: String,
-    val year: String,
-    val genre: String,
-    val posterUrl: String,
-    val description: String,
-    val actors: List<Actor> = emptyList()
+    val name: String? = null,
+    val alternativeName: String? = null,
+    val enName: String? = null,
+    val year: Int? = null,
+    val poster: Poster? = null
 )
 
 @Serializable
-data class Actor(
-    val name: String,
-    val photoUrl: String
+data class Poster(
+    val url: String? = null,
+    val previewUrl: String? = null
 )
+
+
+@Serializable
+data class MovieResponse(val docs: List<Movie>)

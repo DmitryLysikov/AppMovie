@@ -10,73 +10,56 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import ru.dima.moviesapp.ui.screens.movies.MoviesScreen
 import ru.dima.moviesapp.ui.screens.details.MovieDetailsScreen
 import ru.dima.moviesapp.ui.screens.favorites.FavoritesScreen
-import ru.dima.moviesapp.ui.screens.movies.MoviesScreen
 import ru.dima.moviesapp.ui.screens.movies.MoviesViewModel
-
-sealed class Screen(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    object Movies : Screen("movies", "Фильмы", Icons.Default.Check)
-    object Favorites : Screen("favorites", "Избранное", Icons.Default.Favorite)
-    object Details : Screen("details/{movieId}", "Детали", Icons.Default.Info)
-}
+import ru.dima.moviesapp.data.api.RetrofitClient
+import ru.dima.moviesapp.data.repository.MoviesRepository
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
-    val viewModel: MoviesViewModel = viewModel()
-
-    val items = listOf(Screen.Movies, Screen.Favorites)
-    var showBottomBar by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val repository = remember { MoviesRepository(RetrofitClient.getApi(context)) }
+    val moviesViewModel = remember { MoviesViewModel(repository) }
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-                    items.forEach { screen ->
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.label) },
-                            label = { Text(screen.label) },
-                            selected = currentRoute == screen.route,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.startDestinationId)
-                                    launchSingleTop = true
-                                }
-                            }
-                        )
-                    }
-                }
+            NavigationBar {
+                NavigationBarItem(
+                    selected = true,
+                    onClick = { navController.navigate("movies") },
+                    icon = { Icon(Icons.Default.Check, contentDescription = null) },
+                    label = { Text("Фильмы") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { navController.navigate("favorites") },
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
+                    label = { Text("Избранное") }
+                )
             }
         }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Movies.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Screen.Movies.route) {
-                showBottomBar = true
-                MoviesScreen(viewModel) { id ->
-                    showBottomBar = false
-                    navController.navigate("details/$id")
+    ) { padding ->
+        NavHost(navController, startDestination = "movies", Modifier.padding(padding)) {
+            composable("movies") {
+                MoviesScreen(viewModel = moviesViewModel) { movieId ->
+                    navController.navigate("details/$movieId")
                 }
-            }
-            composable(Screen.Favorites.route) {
-                showBottomBar = true
-                FavoritesScreen()
             }
             composable(
-                route = Screen.Details.route,
+                "details/{movieId}",
                 arguments = listOf(navArgument("movieId") { type = NavType.IntType })
             ) { backStackEntry ->
-                showBottomBar = false
-                val movieId = backStackEntry.arguments?.getInt("movieId") ?: -1
-                viewModel.getMovieById(movieId)?.let {
-                    MovieDetailsScreen(it)
-                }
+                val id = backStackEntry.arguments?.getInt("movieId") ?: 0
+                MovieDetailsScreen(repository = repository, movieId = id)
+            }
+            composable("favorites") {
+                FavoritesScreen()
             }
         }
     }
 }
+
