@@ -11,7 +11,7 @@ val localProps = Properties()
 if (localPropsFile.exists()) {
     localProps.load(FileInputStream(localPropsFile))
 }
-val kinopoiskKey: String = localProps.getProperty("KINOPISK_API_KEY") ?: ""
+val kinopoiskKey: String = localProps.getProperty("KINOPOISK_API_KEY", "")
 
 android {
     namespace = "ru.dima.moviesapp"
@@ -28,14 +28,9 @@ android {
         buildConfigField("String", "KINOPOISK_API_KEY", "\"$kinopoiskKey\"")
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
+    buildFeatures {
+        buildConfig = true
+        compose = true
     }
 
     compileOptions {
@@ -45,15 +40,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-    }
-
-    buildFeatures {
-        buildConfig = true
-        compose = true
-    }
-
-    buildFeatures {
-        compose = true
     }
 
     composeOptions {
@@ -76,7 +62,10 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation(libs.ads.mobile.sdk)
+
+    debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
+    releaseImplementation("com.github.chuckerteam.chucker:library-no-op:4.0.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

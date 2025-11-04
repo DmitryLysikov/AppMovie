@@ -14,21 +14,16 @@ import ru.dima.moviesapp.ui.screens.movies.MoviesScreen
 import ru.dima.moviesapp.ui.screens.details.MovieDetailsScreen
 import ru.dima.moviesapp.ui.screens.favorites.FavoritesScreen
 import ru.dima.moviesapp.ui.screens.movies.MoviesViewModel
-import ru.dima.moviesapp.data.api.KinopoiskApi
+import ru.dima.moviesapp.data.api.RetrofitClient
 import ru.dima.moviesapp.data.repository.MoviesRepository
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
-    val retrofit = Retrofit.Builder()
-        .baseUrl("https://api.kinopoisk.dev/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-    val api = retrofit.create(KinopoiskApi::class.java)
-    val repository = MoviesRepository(api)
-    val moviesViewModel = MoviesViewModel(repository)
+    val context = LocalContext.current
+    val repository = remember { MoviesRepository(RetrofitClient.getApi(context)) }
+    val moviesViewModel = remember { MoviesViewModel(repository) }
 
     Scaffold(
         bottomBar = {
@@ -67,3 +62,4 @@ fun NavGraph() {
         }
     }
 }
+
